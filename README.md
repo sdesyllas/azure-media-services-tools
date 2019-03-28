@@ -7,5 +7,5 @@ provides command line tool for azure media services functionality via the SDKv3
 Exports assets from Azure Media Services in a csv file.
 
 ```
-dotnet ExportAssets export.csv
+dotnet Spyro.AzureMediaServicesTools.SdkV3.dll ExportAssets export.csv
 ```
