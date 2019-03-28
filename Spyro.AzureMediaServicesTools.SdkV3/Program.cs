@@ -22,7 +22,7 @@ namespace Spyro.AzureMediaServicesTools.SdkV3
             return CommandLine.Run<Program>(CommandLine.Arguments, defaultCommandName: "ExportAssets");
         }
 
-        public static int ExportAssetsInCsv(string exportPath)
+        public static int ExportAssets(string exportPath)
         {
             var config = new ConfigWrapper(new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
