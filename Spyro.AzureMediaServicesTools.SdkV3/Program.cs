@@ -34,25 +34,34 @@ namespace Spyro.AzureMediaServicesTools.SdkV3
             var assets = new List<Asset>();
             var firstPage = amsClient.Assets.List(config.ResourceGroup, config.AccountName);
             var currentPage = firstPage;
-            assets.AddRange(currentPage);
-            while (firstPage.NextPageLink != null)
+            assets.AddRange(firstPage);
+            while (currentPage.NextPageLink != null)
             {
                 currentPage = amsClient.Assets.ListNext(currentPage.NextPageLink);
-            }
-
-            var assetRows = new List<AssetRow>();
-            foreach (var asset in assets)
-            {
-                var streamingLocator = GetStreamingLocatorFromPagingResults(asset.Name, config, amsClient);
-                var streamingPolicy = amsClient.StreamingLocators.ListPaths(config.ResourceGroup, config.AccountName,
-                    streamingLocator.Name);
-                assetRows.Add(new AssetRow(){AssetId = asset.Name, Manifest = streamingPolicy.StreamingPaths[0].Paths[0]});
+                assets.AddRange(currentPage);
             }
 
             using (var writer = new StreamWriter(exportPath))
             using (var csv = new CsvWriter(writer))
             {
-                csv.WriteRecords(assetRows);
+                csv.Configuration.HasHeaderRecord = false;
+
+                foreach (var asset in assets)
+                {
+                    try
+                    {
+                        var streamingLocator = GetStreamingLocatorFromPagingResults(asset.Name, config, amsClient);
+                        var streamingPolicy = amsClient.StreamingLocators.ListPaths(config.ResourceGroup, config.AccountName,
+                            streamingLocator.Name);
+                        var ism = streamingPolicy.StreamingPaths[0].Paths[0].Split('/')[2];
+                        csv.WriteRecord(new AssetRow { AssetId = asset.Description, Manifest = ism });
+                        Console.WriteLine($"{asset.Description}, {ism}");
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
+                }
             }
 
             return 0;
