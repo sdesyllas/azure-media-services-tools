@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,6 +25,8 @@ namespace Spyro.AzureMediaServicesTools.SdkV3
 
         public static int ExportAssets(string exportPath)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             var config = new ConfigWrapper(new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -41,29 +44,35 @@ namespace Spyro.AzureMediaServicesTools.SdkV3
                 assets.AddRange(currentPage);
             }
 
+            var assetRows = new List<AssetRow>();
+
+            foreach (var asset in assets)
+            {
+                try
+                {
+                    var streamingLocator = GetStreamingLocatorFromPagingResults(asset.Name, config, amsClient);
+                    var streamingPolicy = amsClient.StreamingLocators.ListPaths(config.ResourceGroup,
+                        config.AccountName,
+                        streamingLocator.Name);
+                    var ism = streamingPolicy.StreamingPaths[0].Paths[0].Split('/')[2];
+                    assetRows.Add(new AssetRow { AssetId = asset.Description, Manifest = ism });
+                    Console.WriteLine($"{asset.Description}, {ism}");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
             using (var writer = new StreamWriter(exportPath))
             using (var csv = new CsvWriter(writer))
             {
                 csv.Configuration.HasHeaderRecord = false;
-
-                foreach (var asset in assets)
-                {
-                    try
-                    {
-                        var streamingLocator = GetStreamingLocatorFromPagingResults(asset.Name, config, amsClient);
-                        var streamingPolicy = amsClient.StreamingLocators.ListPaths(config.ResourceGroup, config.AccountName,
-                            streamingLocator.Name);
-                        var ism = streamingPolicy.StreamingPaths[0].Paths[0].Split('/')[2];
-                        csv.WriteRecord(new AssetRow { AssetId = asset.Description, Manifest = ism });
-                        Console.WriteLine($"{asset.Description}, {ism}");
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e);
-                    }
-                }
+                csv.WriteRecords(assetRows);
             }
-
+            stopwatch.Stop();
+            Console.WriteLine($"Exported {assetRows.Count} Assets from {config.AccountName} in {stopwatch.Elapsed}");
+            Console.WriteLine("Press any key to terminate");
+            Console.ReadLine();
             return 0;
         }
 
