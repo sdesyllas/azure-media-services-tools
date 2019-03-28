@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Spyro.AzureMediaServicesTools.SdkV3": {
+      "commandName": "Project",
+      "commandLineArgs": "ExportAssets csv"
+    }
+  }
+}
