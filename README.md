@@ -6,4 +6,6 @@ provides command line tool for azure media services functionality via the SDKv3
 # Export assets
 Exports assets from Azure Media Services in a csv file.
 
+```
 ExportAssets export.csv
+```
